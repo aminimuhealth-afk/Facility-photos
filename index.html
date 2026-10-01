@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b5d7a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Facility Photos</title>
+<style>
+:root{
+  --bg:#eef3f6; --card:#ffffff; --ink:#11222c; --muted:#5a6f7b; --line:#d5e0e6;
+  --accent:#0b5d7a; --accent-ink:#ffffff; --danger:#b3261e; --soft:#e1eef4;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0e171c; --card:#16232a; --ink:#e6eff3; --muted:#93a8b3; --line:#27383f;
+         --accent:#58bfe0; --accent-ink:#06222c; --danger:#ff9087; --soft:#1d3139; }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{
+  font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Naskh Arabic",sans-serif;
+  background:var(--bg);color:var(--ink);
+  display:flex;flex-direction:column;height:100dvh;
+  padding-top:env(safe-area-inset-top);
+}
+body.lock{overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+header.top{padding:14px 16px 8px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+header.top h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+header.top span{color:var(--muted);font-size:14px}
+main{flex:1;overflow-y:auto;padding:4px 12px 20px;-webkit-overflow-scrolling:touch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{margin:0 0 10px;font-size:16px}
+label{display:block;font-size:13px;color:var(--muted);font-weight:600}
+label>span{display:block;margin-bottom:4px}
+select,input[type=text],input[type=date],input[type=month]{
+  width:100%;height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;
+  background:var(--bg);color:var(--ink);font-size:16px;font-weight:400;
+}
+select:focus,input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.form{display:grid;gap:12px}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{
+  height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);
+  background:var(--card);font-weight:600;cursor:pointer;
+}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--danger)}
+.btn.small{height:36px;font-size:14px;padding:0 12px}
+.btn.big{width:100%;height:50px;font-size:17px}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:10px;align-items:center}
+.row.end{justify-content:flex-end;margin-top:16px}
+.row>*{flex:1}
+.muted{color:var(--muted);font-size:14px}
+#summary{margin:12px 2px 8px;font-size:14px;color:var(--muted)}
+#grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+@media (min-width:600px){#grid{grid-template-columns:repeat(5,1fr)}}
+.cell{position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--line);border:0;padding:0;cursor:pointer}
+.cell img{width:100%;height:100%;object-fit:cover;display:block}
+.cell .cap{
+  position:absolute;left:0;right:0;bottom:0;padding:14px 5px 4px;text-align:left;
+  font-size:11px;line-height:1.25;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.72));
+}
+.cap b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cap i{display:block;font-style:normal;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{text-align:center;padding:36px 18px;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);font-size:17px;margin-bottom:6px}
+#more{margin:12px 0}
+.staged{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.staged img{width:56px;height:56px;object-fit:cover;border-radius:8px}
+.staged .moreTag{display:grid;place-items:center;width:56px;height:56px;border-radius:8px;background:var(--soft);font-weight:700;font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;background:var(--soft);overflow:hidden}
+.chip button{background:none;border:0;padding:8px 10px;cursor:pointer}
+.chip .chipx{padding:8px 12px 8px 4px;color:var(--muted);font-size:18px;line-height:1}
+.chk{display:flex;gap:10px;align-items:center;font-size:15px;color:var(--ink);font-weight:400}
+.chk input{width:22px;height:22px;accent-color:var(--accent)}
+nav.tabs{display:flex;border-top:1px solid var(--line);background:var(--card);padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{
+  flex:1;padding:9px 0 7px;background:none;border:0;color:var(--muted);
+  font-size:12px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;
+}
+nav.tabs button.on{color:var(--accent)}
+nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#toast{
+  position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:60;
+  max-width:90vw;text-align:center;
+}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.sheet{
+  width:100%;max-width:480px;background:var(--card);border-radius:18px 18px 0 0;
+  padding:18px 16px calc(16px + env(safe-area-inset-bottom));
+}
+@media (min-width:600px){.overlay{align-items:center}.sheet{border-radius:18px}}
+.sheet h3{margin:0 0 12px;font-size:18px}
+.sheet p{margin:0 0 4px}
+#busy{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:70;color:#fff;font-weight:600}
+#busy div{background:var(--card);color:var(--ink);padding:18px 22px;border-radius:14px}
+#viewer{position:fixed;inset:0;background:#000;color:#fff;display:flex;flex-direction:column;z-index:40;padding-top:env(safe-area-inset-top)}
+.vbar{display:flex;justify-content:space-between;align-items:center;padding:6px 8px}
+.vbar button,.vact button{
+  background:rgba(255,255,255,.12);border:0;color:#fff;border-radius:10px;height:42px;padding:0 14px;font-weight:600;cursor:pointer;
+}
+.vstage{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;position:relative;touch-action:pan-x pan-y pinch-zoom}
+.vstage img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.vstage.zoom{align-items:flex-start;justify-content:flex-start}
+.vstage.zoom img{max-width:none;max-height:none;width:260%;height:auto}
+.vnav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:64px;border:0;border-radius:10px;background:rgba(0,0,0,.45);color:#fff;font-size:30px;cursor:pointer}
+.vnav.prev{left:6px}.vnav.next{right:6px}
+.vstage.zoom .vnav{display:none}
+.vinfo{padding:10px 14px calc(12px + env(safe-area-inset-bottom));background:#101417}
+.vinfo .t{font-weight:700;font-size:17px}
+.vinfo .d{opacity:.8;font-size:14px}
+.vinfo .n{opacity:.8;font-size:14px;margin-top:2px}
+.vact{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.vact .del{color:#ff9087}
+</style>
+</head>
+<body>
+
+<header class="top"><h1 id="title">Photos</h1><span id="headInfo"></span></header>
+
+<main>
+  <!-- BROWSE -->
+  <section id="v-browse">
+    <div class="card">
+      <div class="filters">
+        <label><span>Facility</span><select id="fFacility"></select></label>
+        <label><span>Type</span><select id="fType"></select></label>
+        <label><span>Month</span><input type="month" id="fMonth"></label>
+        <label><span>Exact day</span><input type="date" id="fDay"></label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="fSearch" type="button">Search</button>
+        <button class="btn" id="fClear" type="button">Clear</button>
+      </div>
+    </div>
+    <div id="summary"></div>
+    <div id="grid"></div>
+    <button class="btn" id="more" type="button" hidden style="width:100%">Show more</button>
+    <div class="empty" id="empty" hidden></div>
+  </section>
+
+  <!-- ADD -->
+  <section id="v-add" hidden>
+    <div class="card">
+      <div class="row">
+        <button class="btn primary" id="btnCam" type="button">Take photo</button>
+        <button class="btn" id="btnGal" type="button">From gallery</button>
+      </div>
+      <input type="file" id="inCam" accept="image/*" capture="environment" hidden>
+      <input type="file" id="inGal" accept="image/*" multiple hidden>
+      <div id="stagedInfo" class="muted" style="margin-top:12px">Pick one or many photos, then choose where they belong.</div>
+      <div id="staged" class="staged"></div>
+    </div>
+    <div class="card form">
+      <label><span>Facility</span><select id="aFacility"></select></label>
+      <label><span>Type</span><select id="aType"></select></label>
+      <label><span>Date</span><input type="date" id="aDate"></label>
+      <label class="chk"><input type="checkbox" id="aOwn"> Use each photo’s own date</label>
+      <label><span>Note (optional)</span><input type="text" id="aNote" maxlength="120" placeholder="e.g. Invoice no. 4521"></label>
+      <button class="btn primary big" id="btnSave" type="button" disabled>Save photos</button>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="v-set" hidden>
+    <div class="card">
+      <h2>Facilities</h2>
+      <div id="list-facilities" class="chips"></div>
+      <button class="btn small" id="addFac" type="button">Add facility</button>
+      <p class="muted" style="margin-bottom:0">Tap a name to rename it. Photos update automatically.</p>
+    </div>
+    <div class="card">
+      <h2>Photo types</h2>
+      <div id="list-types" class="chips"></div>
+      <button class="btn small" id="addType" type="button">Add type</button>
+    </div>
+    <div class="card">
+      <h2>Backup</h2>
+      <p class="muted">Photos are kept inside this app on this phone only. If the app data is cleared, they are gone, so save a backup file now and then.</p>
+      <div class="row">
+        <button class="btn" id="btnExport" type="button">Save backup</button>
+        <button class="btn" id="btnImport" type="button">Restore backup</button>
+      </div>
+      <input type="file" id="inImport" accept="application/json,.json" hidden>
+      <p class="muted" id="usage" style="margin:12px 0 0"></p>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs">
+  <button id="t-browse" class="on" type="button">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>Find
+  </button>
+  <button id="t-add" type="button">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>Add
+  </button>
+  <button id="t-set" type="button">
+    <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Manage
+  </button>
+</nav>
+
+<div id="viewer" hidden>
+  <div class="vbar"><button id="vClose" type="button">Close</button><span id="vPos"></span></div>
+  <div class="vstage" id="vStage">
+    <img id="vImg" alt="Selected photo">
+    <button class="vnav prev" id="vPrev" type="button" aria-label="Previous">‹</button>
+    <button class="vnav next" id="vNext" type="button" aria-label="Next">›</button>
+  </div>
+  <div class="vinfo">
+    <div class="t" id="vMeta"></div>
+    <div class="d" id="vDate"></div>
+    <div class="n" id="vNote"></div>
+    <div class="vact">
+      <button id="vEdit" type="button">Edit</button>
+      <button id="vShare" type="button">Share</button>
+      <button id="vSave" type="button">Download</button>
+      <button id="vDel" class="del" type="button">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" hidden></div>
+<div id="busy" hidden><div id="busyText">Working…</div></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+function el(tag, props, ...kids){
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(props || {})){
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  kids.flat().forEach(c => { if (c != null && c !== false) e.append(c); });
+  return e;
+}
+const ymd = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+const fmtDate = s => new Date(s + 'T00:00:00').toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'});
+const fmtMonth = s => new Date(s + '-01T00:00:00').toLocaleDateString(undefined, {month:'long', year:'numeric'});
+const safe = s => s.replace(/[^\p{L}\p{N}-]+/gu, '');
+const fmtMB = b => (b / 1048576).toFixed(b > 1e8 ? 0 : 1) + ' MB';
+const reqP = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const txDone = t => new Promise((res, rej) => {
+  t.oncomplete = () => res();
+  t.onerror = () => rej(t.error);
+  t.onabort = () => rej(t.error || new Error('Storage failed'));
+});
+
+let toastTimer;
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2800);
+}
+function busy(msg){
+  if (msg == null){ $('#busy').hidden = true; return; }
+  $('#busyText').textContent = msg; $('#busy').hidden = false;
+}
+
+/* ---------- storage ---------- */
+const DEF_FACILITIES = ['DHQ Timergara'];
+const DEF_TYPES = ['Medicine invoice', 'Equipment', 'Report', 'Other'];
+let db, photos = [], lists = {facilities: [], types: []};
+
+function openDB(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('facilityPhotos', 1);
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      d.createObjectStore('photos', {keyPath: 'id', autoIncrement: true});
+      d.createObjectStore('full', {keyPath: 'id'});
+      d.createObjectStore('meta', {keyPath: 'key'});
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function saveLists(){
+  const t = db.transaction('meta', 'readwrite');
+  t.objectStore('meta').put({key:'lists', facilities: lists.facilities, types: lists.types});
+  await txDone(t);
+}
+async function loadAll(){
+  photos = await reqP(db.transaction('photos').objectStore('photos').getAll());
+  const m = await reqP(db.transaction('meta').objectStore('meta').get('lists'));
+  lists = m ? {facilities: m.facilities.slice(), types: m.types.slice()}
+            : {facilities: DEF_FACILITIES.slice(), types: DEF_TYPES.slice()};
+  let changed = !m;
+  photos.forEach(p => {
+    if (!lists.facilities.includes(p.facility)){ lists.facilities.push(p.facility); changed = true; }
+    if (!lists.types.includes(p.type)){ lists.types.push(p.type); changed = true; }
+  });
+  if (changed) await saveLists();
+}
+async function addPhotoRec(rec, blob){
+  const t = db.transaction(['photos','full'], 'readwrite');
+  const r = t.objectStore('photos').add(rec);
+  r.onsuccess = () => { rec.id = r.result; t.objectStore('full').put({id: r.result, blob}); };
+  await txDone(t);
+}
+async function putPhotoRec(rec){
+  const t = db.transaction('photos', 'readwrite');
+  t.objectStore('photos').put(rec);
+  await txDone(t);
+}
+async function delPhotoRec(id){
+  const t = db.transaction(['photos','full'], 'readwrite');
+  t.objectStore('photos').delete(id);
+  t.objectStore('full').delete(id);
+  await txDone(t);
+}
+async function getFull(id){
+  const r = await reqP(db.transaction('full').objectStore('full').get(id));
+  return r && r.blob;
+}
+
+/* ---------- image processing ---------- */
+async function decode(file){
+  try {
+    const bmp = await createImageBitmap(file, {imageOrientation: 'from-image'});
+    return {src: bmp, w: bmp.width, h: bmp.height};
+  } catch(e) {}
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image(); img.src = url; await img.decode();
+    return {src: img, w: img.naturalWidth, h: img.naturalHeight, url};
+  } catch(e) { URL.revokeObjectURL(url); throw e; }
+}
+const toBlob = (c, q) => new Promise(r => c.toBlob(r, 'image/jpeg', q));
+async function makeBoth(file){
+  const d = await decode(file);
+  const FULL = 2200, THUMB = 360;
+  const sc = Math.min(1, FULL / Math.max(d.w, d.h));
+  const w = Math.round(d.w * sc), h = Math.round(d.h * sc);
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(d.src, 0, 0, w, h);
+  if (d.src.close) d.src.close();
+  if (d.url) URL.revokeObjectURL(d.url);
+  const full = await toBlob(c, 0.85);
+  const ts = Math.min(1, THUMB / Math.max(w, h));
+  const tc = document.createElement('canvas'); tc.width = Math.round(w*ts); tc.height = Math.round(h*ts);
+  tc.getContext('2d').drawImage(c, 0, 0, tc.width, tc.height);
+  const thumb = await toBlob(tc, 0.7);
+  c.width = c.height = tc.width = tc.height = 0;
+  if (!full || !thumb) throw new Error('Could not read image');
+  return {full, thumb, w, h};
+}
+
+/* ---------- modal helpers ---------- */
+function modal({title, body, buttons}){
+  return new Promise(resolve => {
+    const ov = el('div', {class:'overlay'});
+    const done = v => { ov.remove(); resolve(v); };
+    const bar = el('div', {class:'row end'});
+    buttons.forEach(b => bar.append(el('button', {
+      class: 'btn ' + (b.kind || ''), type: 'button', text: b.label,
+      onclick: () => { const v = b.get ? b.get() : b.result; if (v === undefined) return; done(v); }
+    })));
+    const box = el('div', {class:'sheet', role:'dialog'}, el('h3', {text: title}), body, bar);
+    ov.append(box);
+    ov.addEventListener('click', e => { if (e.target === ov) done(null); });
+    document.body.append(ov);
+    const first = box.querySelector('input,select');
+    if (first) setTimeout(() => first.focus(), 60);
+  });
+}
+function askText(title, value = '', placeholder = ''){
+  const inp = el('input', {type:'text', value, placeholder, maxlength:'60'});
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter'){ e.preventDefault(); inp.closest('.sheet').querySelector('.primary').click(); }
+  });
+  return modal({title, body: inp, buttons: [
+    {label:'Cancel', result:null},
+    {label:'OK', kind:'primary', get: () => inp.value.trim() || undefined}
+  ]});
+}
+async function askConfirm(title, msg, okLabel = 'OK', danger = false){
+  const r = await modal({title, body: el('p', {class:'muted', text: msg}), buttons: [
+    {label:'Cancel', result:false},
+    {label: okLabel, kind: danger ? 'primary danger' : 'primary', result:true}
+  ]});
+  return r === true;
+}
+const lab = (text, ctl) => el('label', {}, el('span', {text}), ctl);
+
+/* ---------- selects & lists ---------- */
+function fillSelect(sel, items, opt = {}){
+  const prev = opt.selected !== undefined ? opt.selected : sel.value;
+  sel.replaceChildren();
+  if (opt.allLabel) sel.append(new Option(opt.allLabel, ''));
+  items.forEach(i => sel.append(new Option(i, i)));
+  if (opt.addNew) sel.append(new Option('+ Add new…', '__new__'));
+  if (prev != null && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  sel.dataset.prev = sel.value;
+}
+function sortedList(a){ return a.slice().sort((x, y) => x.localeCompare(y)); }
+function refreshAll(){
+  fillSelect($('#fFacility'), sortedList(lists.facilities), {allLabel:'All facilities'});
+  fillSelect($('#fType'), sortedList(lists.types), {allLabel:'All types'});
+  fillSelect($('#aFacility'), lists.facilities, {addNew:true});
+  fillSelect($('#aType'), lists.types, {addNew:true});
+  renderLists();
+  applyFilters();
+  showUsage();
+}
+async function addListItem(key, name){
+  const hit = lists[key].find(x => x.toLowerCase() === name.toLowerCase());
+  if (hit) return hit;
+  lists[key].push(name);
+  await saveLists();
+  return name;
+}
+async function onAddSelChange(sel, key){
+  if (sel.value !== '__new__'){ sel.dataset.prev = sel.value; return; }
+  const name = await askText(key === 'facilities' ? 'New facility name' : 'New photo type', '', key === 'facilities' ? 'e.g. THQ Lal Qilla' : 'e.g. Lab report');
+  if (!name){ sel.value = sel.dataset.prev || (sel.options[0] && sel.options[0].value) || ''; return; }
+  const canon = await addListItem(key, name);
+  refreshAll();
+  sel.value = canon; sel.dataset.prev = canon;
+}
+
+function renderLists(){
+  [['facilities','facility'], ['types','type']].forEach(([key, field]) => {
+    const box = $('#list-' + key); box.replaceChildren();
+    lists[key].forEach(name => {
+      const n = photos.filter(p => p[field] === name).length;
+      box.append(el('span', {class:'chip'},
+        el('button', {type:'button', text: name + ' (' + n + ')', onclick: () => renameItem(key, field, name)}),
+        el('button', {type:'button', class:'chipx', 'aria-label':'Delete ' + name, text:'×', onclick: () => deleteItem(key, field, name, n)})
+      ));
+    });
+  });
+}
+async function renameItem(key, field, oldName){
+  const name = await askText('Rename', oldName);
+  if (!name || name === oldName) return;
+  if (lists[key].some(x => x.toLowerCase() === name.toLowerCase() && x !== oldName)){ toast('That name already exists'); return; }
+  busy('Updating…');
+  lists[key] = lists[key].map(x => x === oldName ? name : x);
+  await saveLists();
+  for (const p of photos){ if (p[field] === oldName){ p[field] = name; await putPhotoRec(p); } }
+  busy(null); refreshAll(); toast('Renamed');
+}
+async function deleteItem(key, field, name, n){
+  if (n > 0){ toast(n + ' photos use this. Rename it or move those photos first.'); return; }
+  if (!(await askConfirm('Remove “' + name + '”?', 'It will no longer appear in the lists.', 'Remove', true))) return;
+  lists[key] = lists[key].filter(x => x !== name);
+  await saveLists(); refreshAll();
+}
+
+/* ---------- browse ---------- */
+let filtered = [], shown = 90, thumbURLs = [], searched = false;
+function applyFilters(){
+  if (!searched){ filtered = []; shown = 90; renderGrid(); return; }
+  const f = $('#fFacility').value, t = $('#fType').value, m = $('#fMonth').value, d = $('#fDay').value;
+  filtered = photos.filter(p =>
+    (!f || p.facility === f) && (!t || p.type === t) && (d ? p.date === d : (!m || p.date.startsWith(m))));
+  filtered.sort((a, b) => b.date.localeCompare(a.date) || (b.added - a.added));
+  shown = 90;
+  renderGrid();
+}
+function renderGrid(){
+  thumbURLs.forEach(u => URL.revokeObjectURL(u)); thumbURLs = [];
+  const grid = $('#grid'); grid.replaceChildren();
+  const f = $('#fFacility').value, t = $('#fType').value, m = $('#fMonth').value, d = $('#fDay').value;
+  const bits = [f, t, d ? fmtDate(d) : (m ? fmtMonth(m) : '')].filter(Boolean);
+  $('#summary').textContent = searched
+    ? filtered.length + (filtered.length === 1 ? ' photo' : ' photos') + (bits.length ? ' · ' + bits.join(' · ') : '')
+    : '';
+  $('#headInfo').textContent = photos.length + ' saved';
+  filtered.slice(0, shown).forEach((p, i) => {
+    const u = URL.createObjectURL(p.thumb); thumbURLs.push(u);
+    grid.append(el('button', {class:'cell', type:'button', 'aria-label': p.facility + ' ' + p.type + ' ' + p.date, onclick: () => openViewer(i)},
+      el('img', {src:u, alt:'', loading:'lazy'}),
+      el('span', {class:'cap'}, el('b', {text: p.type}), el('i', {text: fmtDate(p.date)}))
+    ));
+  });
+  $('#more').hidden = filtered.length <= shown;
+  const empty = $('#empty');
+  if (!filtered.length){
+    empty.hidden = false;
+    empty.replaceChildren();
+    if (!photos.length){
+      empty.append(el('strong', {text:'No photos yet'}), 'Tap Add to save your first photo.');
+    } else if (!searched){
+      empty.append(el('strong', {text:'Choose what you need'}), 'Pick a facility, type or date above, then tap Search.');
+    } else {
+      empty.append(el('strong', {text:'No photos match'}), 'Try a different facility, type or date.');
+    }
+  } else empty.hidden = true;
+}
+
+/* ---------- viewer ---------- */
+let viewIdx = -1, vToken = 0, vURL = null, curBlob = null;
+async function openViewer(i){
+  if (i < 0 || i >= filtered.length){ closeViewer(); return; }
+  viewIdx = i;
+  const p = filtered[i], tok = ++vToken;
+  $('#viewer').hidden = false; document.body.classList.add('lock');
+  $('#vStage').classList.remove('zoom');
+  $('#vPos').textContent = (i + 1) + ' / ' + filtered.length;
+  $('#vMeta').textContent = p.facility + ' · ' + p.type;
+  $('#vDate').textContent = fmtDate(p.date);
+  $('#vNote').textContent = p.note || '';
+  $('#vImg').removeAttribute('src');
+  const blob = await getFull(p.id);
+  if (tok !== vToken || !blob) return;
+  curBlob = blob;
+  if (vURL) URL.revokeObjectURL(vURL);
+  vURL = URL.createObjectURL(blob);
+  $('#vImg').src = vURL;
+}
+function closeViewer(){
+  vToken++; $('#viewer').hidden = true; document.body.classList.remove('lock');
+  if (vURL){ URL.revokeObjectURL(vURL); vURL = null; }
+  $('#vImg').removeAttribute('src'); curBlob = null;
+}
+const fileName = p => p.date + '_' + safe(p.facility) + '_' + safe(p.type) + '_' + p.id + '.jpg';
+function download(blob, name){
+  const u = URL.createObjectURL(blob);
+  const a = el('a', {href:u, download:name});
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 5000);
+}
+async function editCurrent(){
+  const p = filtered[viewIdx]; if (!p) return;
+  const sf = el('select'), st = el('select');
+  fillSelect(sf, lists.facilities, {selected: p.facility});
+  fillSelect(st, lists.types, {selected: p.type});
+  const dt = el('input', {type:'date', value: p.date});
+  const nt = el('input', {type:'text', value: p.note || '', maxlength:'120'});
+  const body = el('div', {class:'form'}, lab('Facility', sf), lab('Type', st), lab('Date', dt), lab('Note', nt));
+  const r = await modal({title:'Edit details', body, buttons: [
+    {label:'Cancel', result:null},
+    {label:'Save', kind:'primary', get: () => dt.value ? {facility: sf.value, type: st.value, date: dt.value, note: nt.value.trim()} : undefined}
+  ]});
+  if (!r) return;
+  Object.assign(p, r);
+  await putPhotoRec(p);
+  refreshAll();
+  const idx = filtered.indexOf(p);
+  if (idx < 0) closeViewer(); else openViewer(idx);
+  toast('Updated');
+}
+async function deleteCurrent(){
+  const p = filtered[viewIdx]; if (!p) return;
+  if (!(await askConfirm('Delete this photo?', 'This removes it from the app. It cannot be undone.', 'Delete', true))) return;
+  await delPhotoRec(p.id);
+  photos = photos.filter(x => x !== p);
+  const keep = viewIdx;
+  refreshAll();
+  if (!filtered.length) closeViewer(); else openViewer(Math.min(keep, filtered.length - 1));
+  toast('Deleted');
+}
+async function shareCurrent(){
+  const p = filtered[viewIdx]; if (!p || !curBlob) return;
+  const file = new File([curBlob], fileName(p), {type:'image/jpeg'});
+  if (navigator.canShare && navigator.canShare({files:[file]})){
+    try { await navigator.share({files:[file], title: p.facility + ' · ' + p.type}); } catch(e) {}
+  } else toast('Sharing is not available here. Use Download.');
+}
+
+/* ---------- add ---------- */
+let staged = [], stagedURLs = [];
+function renderStaged(){
+  stagedURLs.forEach(u => URL.revokeObjectURL(u)); stagedURLs = [];
+  const box = $('#staged'); box.replaceChildren();
+  staged.slice(0, 8).forEach(f => { const u = URL.createObjectURL(f); stagedURLs.push(u); box.append(el('img', {src:u, alt:''})); });
+  if (staged.length > 8) box.append(el('div', {class:'moreTag', text:'+' + (staged.length - 8)}));
+  $('#stagedInfo').textContent = staged.length
+    ? staged.length + (staged.length === 1 ? ' photo' : ' photos') + ' ready. Choose facility, type and date below.'
+    : 'Pick one or many photos, then choose where they belong.';
+  $('#btnSave').disabled = !staged.length;
+}
+async function saveStaged(){
+  if (!staged.length) return;
+  const facility = $('#aFacility').value, type = $('#aType').value;
+  if (!facility || facility === '__new__' || !type || type === '__new__'){ toast('Choose a facility and a type'); return; }
+  const own = $('#aOwn').checked, baseDate = $('#aDate').value, note = $('#aNote').value.trim();
+  if (!own && !baseDate){ toast('Choose a date'); return; }
+  let ok = 0, bad = 0;
+  for (let i = 0; i < staged.length; i++){
+    busy('Saving ' + (i + 1) + ' of ' + staged.length + '…');
+    const f = staged[i];
+    try {
+      const r = await makeBoth(f);
+      const date = own ? ymd(new Date(f.lastModified || Date.now())) : baseDate;
+      const rec = {facility, type, date, note, added: Date.now(), thumb: r.thumb, w: r.w, h: r.h};
+      await addPhotoRec(rec, r.full);
+      photos.push(rec); ok++;
+    } catch(e) { console.error(e); bad++; }
+  }
+  busy(null);
+  staged = []; renderStaged(); $('#aNote').value = '';
+  refreshAll();
+  toast(ok + ' saved' + (bad ? ', ' + bad + ' failed (unsupported file or storage full)' : ''));
+}
+
+/* ---------- backup ---------- */
+const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); });
+function dataURLToBlob(u){
+  const [h, b64] = u.split(','); const mime = (h.match(/:(.*?);/) || [])[1] || 'image/jpeg';
+  const bin = atob(b64), arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], {type: mime});
+}
+async function exportBackup(){
+  if (!photos.length){ toast('Nothing to back up yet'); return; }
+  try {
+    const parts = ['{"v":1,"lists":' + JSON.stringify(lists) + ',"photos":['];
+    for (let i = 0; i < photos.length; i++){
+      busy('Preparing backup ' + (i + 1) + ' of ' + photos.length + '…');
+      const p = photos[i], blob = await getFull(p.id);
+      parts.push((i ? ',' : '') + JSON.stringify({facility:p.facility, type:p.type, date:p.date, note:p.note || '', added:p.added, img: await blobToDataURL(blob)}));
+    }
+    parts.push(']}');
+    busy(null);
+    download(new Blob(parts, {type:'application/json'}), 'facility-photos-backup-' + ymd(new Date()) + '.json');
+  } catch(e) { busy(null); toast('Backup failed. Try fewer photos or free some memory.'); }
+}
+async function importBackup(file){
+  try {
+    busy('Reading backup…');
+    const data = JSON.parse(await file.text());
+    if (!data || !Array.isArray(data.photos)) throw new Error('bad file');
+    for (const k of ['facilities','types']) (data.lists && data.lists[k] || []).forEach(n => { if (!lists[k].includes(n)) lists[k].push(n); });
+    await saveLists();
+    let n = 0;
+    for (let i = 0; i < data.photos.length; i++){
+      busy('Restoring ' + (i + 1) + ' of ' + data.photos.length + '…');
+      const s = data.photos[i], blob = dataURLToBlob(s.img);
+      const r = await makeBoth(blob);
+      const rec = {facility:s.facility, type:s.type, date:s.date, note:s.note || '', added:s.added || Date.now(), thumb:r.thumb, w:r.w, h:r.h};
+      await addPhotoRec(rec, blob); photos.push(rec); n++;
+      await addListItem('facilities', s.facility); await addListItem('types', s.type);
+    }
+    busy(null); refreshAll(); toast(n + ' photos restored');
+  } catch(e) { console.error(e); busy(null); toast('That file could not be restored'); }
+}
+async function showUsage(){
+  let txt = photos.length + (photos.length === 1 ? ' photo saved' : ' photos saved');
+  try { if (navigator.storage && navigator.storage.estimate){ const e = await navigator.storage.estimate(); txt += ' · ' + fmtMB(e.usage || 0) + ' used'; } } catch(e) {}
+  $('#usage').textContent = txt;
+}
+
+/* ---------- navigation ---------- */
+const TITLES = {browse:'Find photos', add:'Add photos', set:'Manage'};
+function show(v){
+  ['browse','add','set'].forEach(k => {
+    $('#v-' + k).hidden = k !== v;
+    $('#t-' + k).classList.toggle('on', k === v);
+  });
+  $('#title').textContent = TITLES[v];
+  $('main').scrollTop = 0;
+  if (v === 'set') { renderLists(); showUsage(); }
+}
+
+/* ---------- wiring ---------- */
+function wire(){
+  ['browse','add','set'].forEach(k => $('#t-' + k).addEventListener('click', () => show(k)));
+  ['#fFacility','#fType','#fMonth'].forEach(s => $(s).addEventListener('change', () => { if (s === '#fMonth') $('#fDay').value = ''; searched = false; applyFilters(); }));
+  $('#fDay').addEventListener('change', () => { if ($('#fDay').value) $('#fMonth').value = $('#fDay').value.slice(0, 7); searched = false; applyFilters(); });
+  $('#fSearch').addEventListener('click', () => {
+    if (!$('#fFacility').value && !$('#fType').value && !$('#fMonth').value && !$('#fDay').value){ toast('Choose a facility, type or date first'); return; }
+    searched = true; applyFilters();
+    $('#summary').scrollIntoView({behavior:'smooth', block:'start'});
+  });
+  $('#fClear').addEventListener('click', () => { $('#fFacility').value = ''; $('#fType').value = ''; $('#fMonth').value = ''; $('#fDay').value = ''; searched = false; applyFilters(); });
+  $('#more').addEventListener('click', () => { shown += 90; renderGrid(); });
+
+  $('#btnCam').addEventListener('click', () => $('#inCam').click());
+  $('#btnGal').addEventListener('click', () => $('#inGal').click());
+  ['#inCam','#inGal'].forEach(s => $(s).addEventListener('change', e => {
+    staged.push(...Array.from(e.target.files)); e.target.value = ''; renderStaged();
+  }));
+  $('#aFacility').addEventListener('change', e => onAddSelChange(e.target, 'facilities'));
+  $('#aType').addEventListener('change', e => onAddSelChange(e.target, 'types'));
+  $('#aOwn').addEventListener('change', e => { $('#aDate').disabled = e.target.checked; });
+  $('#btnSave').addEventListener('click', saveStaged);
+
+  $('#addFac').addEventListener('click', async () => {
+    const n = await askText('New facility name', '', 'e.g. THQ Lal Qilla'); if (!n) return;
+    await addListItem('facilities', n); refreshAll();
+  });
+  $('#addType').addEventListener('click', async () => {
+    const n = await askText('New photo type', '', 'e.g. Lab report'); if (!n) return;
+    await addListItem('types', n); refreshAll();
+  });
+  $('#btnExport').addEventListener('click', exportBackup);
+  $('#btnImport').addEventListener('click', () => $('#inImport').click());
+  $('#inImport').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importBackup(f); });
+
+  $('#vClose').addEventListener('click', closeViewer);
+  $('#vPrev').addEventListener('click', () => openViewer(viewIdx - 1 < 0 ? filtered.length - 1 : viewIdx - 1));
+  $('#vNext').addEventListener('click', () => openViewer(viewIdx + 1 >= filtered.length ? 0 : viewIdx + 1));
+  $('#vEdit').addEventListener('click', editCurrent);
+  $('#vShare').addEventListener('click', shareCurrent);
+  $('#vSave').addEventListener('click', () => { const p = filtered[viewIdx]; if (p && curBlob) download(curBlob, fileName(p)); });
+  $('#vDel').addEventListener('click', deleteCurrent);
+  $('#vImg').addEventListener('click', () => $('#vStage').classList.toggle('zoom'));
+
+  let sx = null;
+  const stage = $('#vStage');
+  stage.addEventListener('touchstart', e => { sx = (e.touches.length === 1 && !stage.classList.contains('zoom')) ? e.touches[0].clientX : null; }, {passive:true});
+  stage.addEventListener('touchend', e => {
+    if (sx == null) return;
+    const dx = e.changedTouches[0].clientX - sx; sx = null;
+    if (Math.abs(dx) > 60) (dx < 0 ? $('#vNext') : $('#vPrev')).click();
+  });
+  document.addEventListener('keydown', e => {
+    if ($('#viewer').hidden) return;
+    if (e.key === 'Escape') closeViewer();
+    if (e.key === 'ArrowLeft') $('#vPrev').click();
+    if (e.key === 'ArrowRight') $('#vNext').click();
+  });
+}
+
+/* ---------- start ---------- */
+(async function init(){
+  try {
+    db = await openDB();
+    await loadAll();
+  } catch(e) {
+    console.error(e);
+    $('main').replaceChildren(el('div', {class:'empty'}, el('strong', {text:'Storage is not available'}),
+      'Open this app in a normal (not private) browser window and try again.'));
+    return;
+  }
+  $('#aDate').value = ymd(new Date());
+  wire();
+  refreshAll();
+  show('browse');
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e) {}
+})();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>
